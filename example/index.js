@@ -7,7 +7,7 @@ console.log(process.argv.slice(2))
 parse(process.argv.slice(2), {
   // boolean: ['h', 'help'],
   alias: {
-    help: 'h'
+    help: ['h', 'helpme']
   },
   default: {
     save: true

@@ -47,6 +47,8 @@ function parse(args, opts) {
 		}
 	}
 
+	console.log(opts.alias)
+
 	// 处理别名中遗漏的 boolean 类型，这里会出现重复的问题！！！！！
 	for (i=opts.boolean.length; i-- > 0;) {
 		arr = opts.alias[opts.boolean[i]] || [];
@@ -117,7 +119,7 @@ function parse(args, opts) {
 			for (idx=0; idx < arr.length; idx++) {
 				name = arr[idx];
 				console.log('item => ', name)
-				// if (strict && !~keys.indexOf(name)) return opts.unknown('-'.repeat(j) + name);
+				if (strict && !~keys.indexOf(name)) return opts.unknown('-'.repeat(j) + name);
 				/**
 				 * ！！！！ = 后面的值为最后一个参数的值
 				 * 
@@ -149,6 +151,5 @@ function parse(args, opts) {
 	console.log(out)
 	return out;
 }
-
 
 module.exports = parse;
