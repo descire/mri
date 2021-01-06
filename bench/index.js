@@ -1,15 +1,15 @@
 const nopt = require('nopt');
-const previous = require('mri');
+const mri = require('mri');
 const yargs = require('yargs-parser');
-const { Suite } = require('benchmark');
 const minimist = require('minimist');
+const { Suite } = require('benchmark');
 
 const bench = new Suite();
-const args = ['-b', '--bool', '--no-meep', '--multi=baz'];
+const args = ['--name=xiaoming', '-abc', '10', '--save-dev', '--age', '20'];
 
 bench
 	.add('minimist     ', () => minimist(args))
-	.add('mri          ', () => previous(args))
+	.add('mri          ', () => mri(args))
 	.add('nopt         ', () => nopt(args))
 	.add('yargs-parser ', () => yargs(args))
 	.on('cycle', e => console.log(String(e.target)))

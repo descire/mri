@@ -1,3 +1,6 @@
+/**
+ * node ./example/step1.js --name=xiaoming --age 20 --save-dev -abc=10 -c=20  -- --ignore
+ */
 function isNoDef(val) {
   if (val === undefined || val === null) {
     return true;
@@ -55,7 +58,7 @@ function handleKeyValue(output, key, value, options) {
   output[key] = next;
 }
 
-function parse(args = {}, options = {}) {
+function parse(args = [], options = {}) {
   const output = { _: [] };
 
   const { defaultValue, alias } = options;

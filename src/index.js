@@ -152,4 +152,6 @@ function parse(args, opts) {
 	return out;
 }
 
+parse(process.argv.slice(2))
+
 module.exports = parse;
