@@ -26,19 +26,19 @@
   &emsp;&emsp;对于这样的参数数组，无法很方便地获取到每个参数对应的值，所以需要再进行一次解析操作。
 ### 命令行参数风格
 
-  &emsp;&emsp;在解析命令行参数之前，需要了解一些常见的命令行参数的风格：
+  &emsp;&emsp;在解析命令行参数之前，需要了解一些常见的命令行参数风格：
 
   - Unix 风格：参数以「-」（连字符）开头
-  - GNU 风格：参数以「--」开头
+  - GNU 风格：参数以「--」（双连字符）开头
   - BSD 风格：参数以空格分割
 
-  &emsp;&emsp;Unix 风格有一个特殊的注意事项：**「-」后面紧邻的每一个字母多表示一个参数名**。
+  &emsp;&emsp;Unix 参数风格有一个特殊的注意事项：**「-」后面紧邻的每一个字母都表示一个参数名**。
 
 ```s
   ls -al
 ```
 
-  &emsp;&emsp;上述命令用来显示当前目录下所有的文件、文件夹并且显示它们详细的信息，等同于：
+  &emsp;&emsp;上述命令用来显示当前目录下所有的文件、文件夹并且显示它们的详细信息，等同于：
 
 ```s
   ls -a -l
@@ -47,20 +47,18 @@
   &emsp;&emsp;GNU 风格的参数以 「--」开头，一般后面会跟上一个单词或者短语，例如熟悉的 npm 安装依赖的命令：
 
 ```s
-  npm install --save
+  npm install --save koa
 ```
 
-  对于两个单词的情况，在 GNU 风格中，会通过「-」来分割，例如 npm 安装仅用于开发环境的依赖：
+  对于两个单词的情况，在 GNU 参数风格中，会通过「-」来连接，例如 npm 安装仅用于开发环境的依赖：
 
 ```s
-  npm install --save-dev
+  npm install --save-dev webpack
 ```
 
+  &emsp;&emsp;BSD 是加州大学伯克利分校开发的一个 Unix 版本。其与 Unix 的区别主要在于参数前面没有 「-」，个人感觉这样很难区别参数和参数值。
 
-  &emsp;&emsp;BSD 是加州大学伯克利分校开发的一个 Unix 版本。其与 Unix 的区别主要在于参数前面没有 「-」，这种风格暂时不讨论。
-
-
-> -- 后面紧邻空格时，表示后面的参数不解析
+> 注意事项：-- 后面紧邻空格时，表示后面的字符串不需要解析。
 
 ### 解析命令行参数
 
@@ -78,6 +76,7 @@ function parse(args = []) {
     
     if (!isParameter(arg)) {
       output._.push(arg);
+      continue;
     }
 
     ...
@@ -141,20 +140,23 @@ function isParameter(arg) {
 
   let value;
   const assignmentValue = arg.substring(++assignmentIndex);
+```
+
+  &emsp;&emsp;处理参数值时，需要考虑参数赋值的四种场景：
+
+```JavaScript
   if (assignmentValue) {
-    value = assignmentValue;
+    value = assignmentValue; // --name=xiaoming or -abc=10
   } else if (index + 1 === args.length) {
-    value = true;
-  } else if (('' + args[index + 1]).charCodeAt(0) === 45) {
-    value = args[++index];
+    value = true; // --save-dev
+  } else if (('' + args[index + 1]).charCodeAt(0) !== 45) {
+    value = args[++index]; // --age 20
   } else {
-    value = true;
+    value = true; // 缺省情况
   }
 ```
 
-  &emsp;&emsp;处理参数值的时候，需要考虑参数赋值的四种场景。
-
-  &emsp;&emsp;由于 Unix 风格中每一个字母都代表一个参数，所以还需针对该场景进行适配：
+  &emsp;&emsp;由于 Unix 风格中每一个字母都代表一个参数，并且**手动传递的参数值应该赋值给最后一个参数**，所以还需针对该场景进行适配：
 
 ```JavaScript
   // 「-」or「--」
@@ -165,8 +167,6 @@ function isParameter(arg) {
     handleKeyValue(output, _key, _value);
   }
 ```
-
-  &emsp;&emsp;如果是 Unix 风格，则需要将单个字母拆分开，并且**手动传递的参数值应该赋值给最后一个参数**。
 
   &emsp;&emsp;最后针对参数的赋值操作，需要考虑到**多次赋值**的情况：
 
@@ -187,21 +187,23 @@ function handleKeyValue(output, key, value) {
 }
 ```
 
+  &emsp;&emsp;到此，命令行参数的解析功能就完成了。
+
 ### 别名机制
 
-  &emsp;&emsp;比较优秀的 CLI 工具在参数的解析上都支持参数名的简写，例如使用 npm 安装开发环境依赖时，你可以选择这种完整的写法：
+  &emsp;&emsp;比较优秀的 CLI 工具在参数的解析上都支持参数名的简写（别名），例如使用 npm 安装开发环境依赖时，你可以选择这种完整的写法：
 
 ```s
   npm install --save-dev webpack
 ```
 
-  &emsp;&emsp;同样，你也可以使用下面这种简写方式：
+  &emsp;&emsp;你也可以使用下面这种简写方式：
 
 ```s
   npm install -D webpack
 ```
 
-  &emsp;&emsp;从使用方来说 -D 和 --save-dev 是两种方式，但是从 CLI 工具的开发者来说，最终处理逻辑时肯定只以一个参数名为标准，所以对于一个命令行参数解析库来说，其结果得包含所有的情况：
+  &emsp;&emsp;从使用方来说 -D 和 --save-dev 是两种方式，但是从 CLI 工具的开发者来说，最终处理逻辑时只能以一个参数名为标准，所以对于一个命令行参数解析库来说，其结果需要包含所有的情况：
 
 ```s
   npm install --save-dev webpack
@@ -229,7 +231,7 @@ function handleKeyValue(output, key, value) {
   }
 ```
 
-  &emsp;&emsp;因为对于使用者来说，只会选择一种方式传递参数，那么在参数解析完成之后，给相关联的别名再赋值一次即可：
+  &emsp;&emsp;因为对于使用者来说，只会选择一种方式传递参数。对于开发者的话需要根据任意一个别名找到其相关联的别名：
 
 ```JavaScript
 function parse(args = [], options = {}) {
@@ -262,7 +264,7 @@ function parse(args = [], options = {}) {
 }
 ```
 
-  &emsp;&emsp;除了别名的处理之外，还有一些可以优化的地方：
+  &emsp;&emsp;除了别名之外，还可以在参数解析之后做如下优化：
 
   - 参数值的类型约束
   - 参数的默认值设定
@@ -290,11 +292,11 @@ bench
 	.run();
 ```
 
-  ![](./WechatIMG4.png)
+  ![](./ceshi.png)
 
-  &emsp;&emsp;本文的内容主要基于解析效率最高的 mri 库的源码来阐述的，感兴趣的同学可以学习其源码。（顺便吐槽一下：嵌套三元操作符可读性真的很差。。）
+  &emsp;&emsp;本文的内容主要参考解析效率最高的 mri 库的源码，感兴趣的同学可以学习其源码实现。（顺便吐槽一下：嵌套三元操作符可读性真的很差。。）
 
-  &emsp;&emsp;虽然上述基准测试中 minimist 效率并不很好，但是其覆盖了比较全的参数输入场景。（这里的测试用例没有覆盖那么全）
+  &emsp;&emsp;虽然上述基准测试中 minimist 效率并不很好，但是其覆盖了比较全的参数输入场景。（以上测试用例覆盖的场景有限）
 ### 写在最后
 
   &emsp;&emsp;最后，**如果本文对您有帮助，欢迎关注（公众号【漫谈大前端】）、点赞、转发 ε=ε=ε=┏(゜ロ゜;)┛。**
